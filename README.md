@@ -17,16 +17,15 @@ Rekor, or remote policy source loading.
 From the repository root:
 
 ```bash
-cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" web/
-GOOS=js GOARCH=wasm go build -o web/playground.wasm ./cmd/wasm
-python3 -m http.server 8090 -d web
+make serve
 ```
 
-Then open:
+That builds `web/playground.wasm`, copies Go's `wasm_exec.js` runtime helper,
+and serves `web/` on <http://localhost:8090>. Override the port with
+`make serve PORT=9000`.
 
-```text
-http://localhost:8090
-```
+In another shell, `make view` opens that URL in your browser. Other targets are
+`make build`, `make test`, and `make clean`.
 
 `playground.wasm` and `wasm_exec.js` are generated local artifacts and are
 ignored by Git.
