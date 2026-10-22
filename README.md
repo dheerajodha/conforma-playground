@@ -5,6 +5,8 @@ Browser-local Conforma policy playground PoC using Go, WebAssembly, and OPA.
 This spike proves a narrow policy authoring loop: inline Rego plus inline
 JSON/YAML input evaluated by OPA from Go compiled to WebAssembly.
 
+The UI uses the Conforma upstream color palette and logo treatment.
+
 It intentionally does not run the full Conforma CLI command tree. The current
 goal is to learn whether the browser can support the core `ec validate input`
 authoring experience before pulling in image validation, OCI fetching, Sigstore,
@@ -28,6 +30,11 @@ http://localhost:8090
 
 `playground.wasm` and `wasm_exec.js` are generated local artifacts and are
 ignored by Git.
+
+## GitHub Pages
+
+The `Deploy GitHub Pages` workflow builds the WASM artifact, copies Go's
+`wasm_exec.js` runtime helper, and publishes the static bundle from `dist/`.
 
 ## What It Supports
 
