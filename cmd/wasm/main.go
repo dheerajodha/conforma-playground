@@ -20,9 +20,10 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"syscall/js"
 
-	"github.com/dheerajodha/conforma-playground/pkg/playground"
+	clipg "github.com/conforma/cli/pkg/playground"
 )
 
 func main() {
@@ -40,9 +41,29 @@ func main() {
 			dataText = args[2].String()
 		}
 
-		report := playground.EvaluateWithData(context.Background(), policyText, inputText, dataText)
-		return playground.MarshalReport(report)
+		response, err := clipg.Evaluate(context.Background(), clipg.Request{
+			Policy: policyText,
+			Input:  inputText,
+			Data:   dataText,
+		})
+		if err != nil {
+			return marshalError(err)
+		}
+		return clipg.MarshalResponse(response)
 	}))
 
 	select {}
+}
+
+func marshalError(err error) string {
+	out, marshalErr := json.MarshalIndent(map[string]any{
+		"success": false,
+		"errors": []map[string]string{{
+			"message": err.Error(),
+		}},
+	}, "", "  ")
+	if marshalErr != nil {
+		return `{"success":false}`
+	}
+	return string(out)
 }

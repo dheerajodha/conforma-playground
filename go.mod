@@ -3,10 +3,12 @@ module github.com/dheerajodha/conforma-playground
 go 1.26.7
 
 require (
-	github.com/open-policy-agent/opa v1.15.2
+	github.com/conforma/cli v0.0.0
 	github.com/stretchr/testify v1.12.1
-	sigs.k8s.io/yaml v1.6.0
 )
+
+// Temporary until github.com/conforma/cli has pkg/playground on its default branch.
+replace github.com/conforma/cli => github.com/dheerajodha/cli v0.0.0-20261022131813-2b2efd9ea71a
 
 require (
 	github.com/agnivade/levenshtein v1.2.1 // indirect
@@ -22,18 +24,20 @@ require (
 	github.com/lestrrat-go/httprc/v3 v3.0.2 // indirect
 	github.com/lestrrat-go/jwx/v3 v3.0.13 // indirect
 	github.com/lestrrat-go/option/v2 v2.0.0 // indirect
+	github.com/open-policy-agent/opa v1.15.2 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9 // indirect
 	github.com/segmentio/asm v1.2.1 // indirect
-	github.com/sirupsen/logrus v1.9.4 // indirect
+	github.com/sirupsen/logrus v1.10.1 // indirect
 	github.com/tchap/go-patricia/v2 v2.3.3 // indirect
 	github.com/valyala/fastjson v1.6.7 // indirect
 	github.com/vektah/gqlparser/v2 v2.5.32 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/yashtewari/glob-intersection v0.2.0 // indirect
-	go.yaml.in/yaml/v2 v2.4.2 // indirect
+	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	golang.org/x/crypto v0.48.0 // indirect
-	golang.org/x/sync v0.20.0 // indirect
-	golang.org/x/sys v0.41.0 // indirect
+	golang.org/x/crypto v0.57.0 // indirect
+	golang.org/x/sync v0.23.0 // indirect
+	golang.org/x/sys v0.48.0 // indirect
+	sigs.k8s.io/yaml v1.6.0 // indirect
 )

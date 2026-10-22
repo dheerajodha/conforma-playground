@@ -1,21 +1,22 @@
 # Playground Parity Notes
 
-The browser PoC currently proves that a Go/WASM evaluator can run OPA over
-inline Rego modules, inline JSON/YAML input, and inline JSON/YAML data.
+The browser PoC currently proves that a Go/WASM evaluator from
+`github.com/conforma/cli/pkg/playground` can run OPA over inline Rego modules,
+inline JSON/YAML input, and inline JSON/YAML data.
 
 ## Verified in This PoC
 
 | Capability | Status | Evidence |
 | --- | --- | --- |
 | Go compiled to browser WASM | Works | `GOOS=js GOARCH=wasm go build ./cmd/wasm` |
-| OPA evaluation in the browser | Works | `rego.New(...).Eval(ctx)` in `pkg/playground/evaluator.go` |
+| OPA evaluation in the browser | Works | `rego.New(...).Eval(ctx)` in `github.com/conforma/cli/pkg/playground` |
 | JSON/YAML input | Works | `parseDocument` tests |
 | Multiple Rego modules | Works | `# file:` markers and fixture test |
 | Helper module imports | Works | `import data.lib.pipeline` and `import data.lib.release` |
 | Separate data document | Works | `data.yaml` loaded as OPA data |
 | Structured deny/warn results | Works | fixture returns Conforma-like `code`, `msg`, and `metadata` objects |
 | OPA rule metadata | Works | fixture `# METADATA` comments produce rule codes and titles in the browser report |
-| CLI-style success count | Works | passing fixture reports `successCount: 3` |
+| CLI-style success count | Works | passing fixture reports `success-count: 3` |
 | Same fixture through `ec validate input` | Works | local `policy.yaml` points at `cli-policy/` and `cli-data/` |
 
 ## CLI Comparison
@@ -74,7 +75,7 @@ The browser output is still intentionally simpler than the CLI report envelope.
 | --- | --- | --- |
 | EnterpriseContractPolicy parsing | Partially exercised outside browser | The CLI fixture uses a local policy config; the browser still accepts pasted Rego/data directly. |
 | Source resolution and downloading | Missing | No git, OCI, or remote bundle fetching in the browser path. |
-| Include/exclude rule filtering | Missing | The playground queries package rules directly. |
+| Include/exclude rule filtering | Missing | The CLI playground package queries package rules directly. |
 | Conforma report shaping | Partial | Output is Conforma-like JSON, not the real CLI report type. |
 | Full Conforma metadata and docs links | Partial | OPA metadata title and `custom.short_name` are inspected, but the browser does not yet mirror all CLI metadata shaping. |
 | CLI custom built-ins | Unknown | Needs an inventory of Conforma-specific OPA built-ins used by real policies. |
