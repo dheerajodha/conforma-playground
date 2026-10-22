@@ -14,7 +14,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package main
+package playground
 
 import (
 	"context"
@@ -29,23 +29,23 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-type playgroundReport struct {
-	Success    bool               `json:"success"`
-	Engine     string             `json:"engine"`
-	Package    string             `json:"package,omitempty"`
-	Modules    []string           `json:"modules,omitempty"`
-	Violations []playgroundResult `json:"violations,omitempty"`
-	Warnings   []playgroundResult `json:"warnings,omitempty"`
-	Errors     []playgroundError  `json:"errors,omitempty"`
+type Report struct {
+	Success    bool     `json:"success"`
+	Engine     string   `json:"engine"`
+	Package    string   `json:"package,omitempty"`
+	Modules    []string `json:"modules,omitempty"`
+	Violations []Result `json:"violations,omitempty"`
+	Warnings   []Result `json:"warnings,omitempty"`
+	Errors     []Error  `json:"errors,omitempty"`
 }
 
-type playgroundResult struct {
+type Result struct {
 	Rule    string `json:"rule"`
 	Message string `json:"msg"`
 	Value   any    `json:"value,omitempty"`
 }
 
-type playgroundError struct {
+type Error struct {
 	Stage   string `json:"stage"`
 	Message string `json:"message"`
 }
@@ -56,30 +56,30 @@ type playgroundModule struct {
 	Package  string
 }
 
-func evaluatePlayground(ctx context.Context, policyText string, inputText string) playgroundReport {
-	return evaluatePlaygroundWithData(ctx, policyText, inputText, "")
+func Evaluate(ctx context.Context, policyText string, inputText string) Report {
+	return EvaluateWithData(ctx, policyText, inputText, "")
 }
 
-func evaluatePlaygroundWithData(ctx context.Context, policyText string, inputText string, dataText string) playgroundReport {
-	report := playgroundReport{
+func EvaluateWithData(ctx context.Context, policyText string, inputText string, dataText string) Report {
+	report := Report{
 		Engine: "opa",
 	}
 
 	input, err := parseDocument(inputText)
 	if err != nil {
-		report.Errors = append(report.Errors, playgroundError{Stage: "input", Message: err.Error()})
+		report.Errors = append(report.Errors, Error{Stage: "input", Message: err.Error()})
 		return report
 	}
 
 	data, err := parseOptionalDocument(dataText)
 	if err != nil {
-		report.Errors = append(report.Errors, playgroundError{Stage: "data", Message: err.Error()})
+		report.Errors = append(report.Errors, Error{Stage: "data", Message: err.Error()})
 		return report
 	}
 
 	modules, err := parsePolicyModules(policyText)
 	if err != nil {
-		report.Errors = append(report.Errors, playgroundError{Stage: "rego", Message: err.Error()})
+		report.Errors = append(report.Errors, Error{Stage: "rego", Message: err.Error()})
 		return report
 	}
 
@@ -92,7 +92,7 @@ func evaluatePlaygroundWithData(ctx context.Context, policyText string, inputTex
 	for _, rule := range []string{"deny", "violation"} {
 		values, err := evalRule(ctx, modules, input, data, pkg, rule)
 		if err != nil {
-			report.Errors = append(report.Errors, playgroundError{Stage: rule, Message: err.Error()})
+			report.Errors = append(report.Errors, Error{Stage: rule, Message: err.Error()})
 			continue
 		}
 		report.Violations = append(report.Violations, normalizeResults(rule, values)...)
@@ -100,7 +100,7 @@ func evaluatePlaygroundWithData(ctx context.Context, policyText string, inputTex
 
 	values, err := evalRule(ctx, modules, input, data, pkg, "warn")
 	if err != nil {
-		report.Errors = append(report.Errors, playgroundError{Stage: "warn", Message: err.Error()})
+		report.Errors = append(report.Errors, Error{Stage: "warn", Message: err.Error()})
 	} else {
 		report.Warnings = append(report.Warnings, normalizeResults("warn", values)...)
 	}
@@ -219,23 +219,23 @@ func evalRule(ctx context.Context, modules []playgroundModule, input any, data m
 	return values, nil
 }
 
-func normalizeResults(rule string, values []any) []playgroundResult {
-	var results []playgroundResult
+func normalizeResults(rule string, values []any) []Result {
+	var results []Result
 	for _, value := range values {
 		results = appendValue(results, rule, value)
 	}
 	return results
 }
 
-func appendValue(results []playgroundResult, rule string, value any) []playgroundResult {
+func appendValue(results []Result, rule string, value any) []Result {
 	switch v := value.(type) {
 	case nil:
 		return results
 	case string:
-		return append(results, playgroundResult{Rule: rule, Message: v})
+		return append(results, Result{Rule: rule, Message: v})
 	case bool:
 		if v {
-			return append(results, playgroundResult{Rule: rule, Message: fmt.Sprintf("%s matched", rule)})
+			return append(results, Result{Rule: rule, Message: fmt.Sprintf("%s matched", rule)})
 		}
 	case []any:
 		for _, item := range v {
@@ -244,14 +244,14 @@ func appendValue(results []playgroundResult, rule string, value any) []playgroun
 	case map[string]any:
 		results = appendMapValues(results, rule, v)
 	default:
-		return append(results, playgroundResult{Rule: rule, Message: fmt.Sprint(v), Value: value})
+		return append(results, Result{Rule: rule, Message: fmt.Sprint(v), Value: value})
 	}
 	return results
 }
 
-func appendMapValues(results []playgroundResult, rule string, values map[string]any) []playgroundResult {
+func appendMapValues(results []Result, rule string, values map[string]any) []Result {
 	if msg, ok := values["msg"].(string); ok {
-		return append(results, playgroundResult{Rule: rule, Message: msg, Value: values})
+		return append(results, Result{Rule: rule, Message: msg, Value: values})
 	}
 
 	keys := make([]string, 0, len(values))
@@ -263,10 +263,10 @@ func appendMapValues(results []playgroundResult, rule string, values map[string]
 	for _, key := range keys {
 		value := values[key]
 		if matched, ok := value.(bool); ok && matched {
-			results = append(results, playgroundResult{Rule: rule, Message: key})
+			results = append(results, Result{Rule: rule, Message: key})
 			continue
 		}
-		results = append(results, playgroundResult{
+		results = append(results, Result{
 			Rule:    rule,
 			Message: fmt.Sprintf("%s: %v", key, value),
 			Value:   map[string]any{key: value},
@@ -275,12 +275,12 @@ func appendMapValues(results []playgroundResult, rule string, values map[string]
 	return results
 }
 
-func marshalReport(report playgroundReport) string {
+func MarshalReport(report Report) string {
 	out, err := json.MarshalIndent(report, "", "  ")
 	if err != nil {
-		fallback, _ := json.Marshal(playgroundReport{
+		fallback, _ := json.Marshal(Report{
 			Engine: "opa",
-			Errors: []playgroundError{{
+			Errors: []Error{{
 				Stage:   "marshal",
 				Message: err.Error(),
 			}},

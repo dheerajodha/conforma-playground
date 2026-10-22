@@ -21,6 +21,8 @@ package main
 import (
 	"context"
 	"syscall/js"
+
+	"github.com/dheerajodha/conforma-playground/pkg/playground"
 )
 
 func main() {
@@ -38,8 +40,8 @@ func main() {
 			dataText = args[2].String()
 		}
 
-		report := evaluatePlaygroundWithData(context.Background(), policyText, inputText, dataText)
-		return marshalReport(report)
+		report := playground.EvaluateWithData(context.Background(), policyText, inputText, dataText)
+		return playground.MarshalReport(report)
 	}))
 
 	select {}

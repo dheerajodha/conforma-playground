@@ -17,9 +17,9 @@ Rekor, or remote policy source loading.
 From the repository root:
 
 ```bash
-cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" .
-GOOS=js GOARCH=wasm go build -o playground.wasm .
-python3 -m http.server 8090
+cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" web/
+GOOS=js GOARCH=wasm go build -o web/playground.wasm ./cmd/wasm
+python3 -m http.server 8090 -d web
 ```
 
 Then open:
@@ -35,6 +35,13 @@ ignored by Git.
 
 The `Deploy GitHub Pages` workflow builds the WASM artifact, copies Go's
 `wasm_exec.js` runtime helper, and publishes the static bundle from `dist/`.
+
+## Repository Layout
+
+- `pkg/playground/` contains the browser-safe playground evaluator package.
+- `cmd/wasm/` exposes the evaluator package to JavaScript when compiled to WASM.
+- `web/` contains the static playground UI and visual assets.
+- `fixtures/` contains example policies, data, and inputs for parity checks.
 
 ## What It Supports
 

@@ -33,10 +33,10 @@ jobs:
       - name: Build WASM
         run: |
           mkdir -p dist
-          cp index.html dist/
-          cp -R assets fixtures dist/
+          cp web/index.html dist/
+          cp -R web/assets fixtures dist/
           cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" dist/
-          GOOS=js GOARCH=wasm go build -o dist/playground.wasm .
+          GOOS=js GOARCH=wasm go build -o dist/playground.wasm ./cmd/wasm
 
       - name: Configure Pages
         uses: actions/configure-pages@v6

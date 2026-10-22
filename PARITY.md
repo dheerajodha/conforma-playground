@@ -7,8 +7,8 @@ inline Rego modules, inline JSON/YAML input, and inline JSON/YAML data.
 
 | Capability | Status | Evidence |
 | --- | --- | --- |
-| Go compiled to browser WASM | Works | `GOOS=js GOARCH=wasm go build ./hack/playground-wasm` |
-| OPA evaluation in the browser | Works | `rego.New(...).Eval(ctx)` in `engine.go` |
+| Go compiled to browser WASM | Works | `GOOS=js GOARCH=wasm go build ./cmd/wasm` |
+| OPA evaluation in the browser | Works | `rego.New(...).Eval(ctx)` in `pkg/playground/evaluator.go` |
 | JSON/YAML input | Works | `parseDocument` tests |
 | Multiple Rego modules | Works | `# file:` markers and fixture test |
 | Helper module imports | Works | `import data.lib.pipeline` and `import data.lib.release` |

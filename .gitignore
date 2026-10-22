@@ -1,3 +1,5 @@
 playground.wasm
 wasm_exec.js
 dist/
+web/playground.wasm
+web/wasm_exec.js

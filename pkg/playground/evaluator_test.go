@@ -14,7 +14,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package main
+package playground
 
 import (
 	"context"
@@ -33,7 +33,7 @@ deny contains msg if {
 }
 `
 
-	report := evaluatePlayground(context.Background(), policy, `{"kind":"Service"}`)
+	report := Evaluate(context.Background(), policy, `{"kind":"Service"}`)
 
 	require.True(t, report.Success == false)
 	require.Empty(t, report.Errors)
@@ -50,7 +50,7 @@ deny contains msg if {
 }
 `
 
-	report := evaluatePlayground(context.Background(), policy, `kind: Deployment`)
+	report := Evaluate(context.Background(), policy, `kind: Deployment`)
 
 	require.True(t, report.Success)
 	require.Empty(t, report.Errors)
@@ -58,7 +58,7 @@ deny contains msg if {
 }
 
 func TestEvaluatePlaygroundSyntaxError(t *testing.T) {
-	report := evaluatePlayground(context.Background(), `package main
+	report := Evaluate(context.Background(), `package main
 
 deny contains msg if {
 	input.kind =
@@ -89,7 +89,7 @@ allowed_kind(kind) if {
 }
 `
 
-	report := evaluatePlaygroundWithData(context.Background(), policy, `kind: Service`, `allowed_kinds: ["Deployment"]`)
+	report := EvaluateWithData(context.Background(), policy, `kind: Service`, `allowed_kinds: ["Deployment"]`)
 
 	require.False(t, report.Success)
 	require.Empty(t, report.Errors)
@@ -117,7 +117,7 @@ allowed_kind(kind) if {
 }
 `
 
-	report := evaluatePlaygroundWithData(context.Background(), policy, `kind: Deployment`, `allowed_kinds: ["Deployment"]`)
+	report := EvaluateWithData(context.Background(), policy, `kind: Deployment`, `allowed_kinds: ["Deployment"]`)
 
 	require.True(t, report.Success)
 	require.Empty(t, report.Errors)
@@ -129,7 +129,7 @@ func TestEvaluatePlaygroundConformaShapedFixture(t *testing.T) {
 	input := readFixture(t, "fixtures/conforma-shaped/input-fail.yaml")
 	data := readFixture(t, "fixtures/conforma-shaped/data.yaml")
 
-	report := evaluatePlaygroundWithData(context.Background(), policy, input, data)
+	report := EvaluateWithData(context.Background(), policy, input, data)
 
 	require.False(t, report.Success)
 	require.Empty(t, report.Errors)
@@ -146,7 +146,7 @@ func TestEvaluatePlaygroundConformaShapedFixturePasses(t *testing.T) {
 	input := readFixture(t, "fixtures/conforma-shaped/input-pass.yaml")
 	data := readFixture(t, "fixtures/conforma-shaped/data.yaml")
 
-	report := evaluatePlaygroundWithData(context.Background(), policy, input, data)
+	report := EvaluateWithData(context.Background(), policy, input, data)
 
 	require.True(t, report.Success)
 	require.Empty(t, report.Errors)
@@ -156,12 +156,13 @@ func TestEvaluatePlaygroundConformaShapedFixturePasses(t *testing.T) {
 
 func readFixture(t *testing.T, path string) string {
 	t.Helper()
+	path = "../../" + path
 	content, err := os.ReadFile(path)
 	require.NoError(t, err)
 	return string(content)
 }
 
-func requireResult(t *testing.T, results []playgroundResult, code string, msg string) {
+func requireResult(t *testing.T, results []Result, code string, msg string) {
 	t.Helper()
 	for _, result := range results {
 		value, ok := result.Value.(map[string]any)
