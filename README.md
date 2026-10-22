@@ -12,6 +12,18 @@ goal is to learn whether the browser can support the core `ec validate input`
 authoring experience before pulling in image validation, OCI fetching, Sigstore,
 Rekor, or remote policy source loading.
 
+## Repository Split
+
+The browser UI, examples, GitHub Pages workflow, and WASM bridge live in this
+repository. The validation engine lives in `github.com/conforma/cli/pkg/playground`
+so Conforma owns the policy evaluation behavior while this repository owns the
+playground experience.
+
+Until `pkg/playground` is available from the Conforma CLI default branch,
+`go.mod` temporarily replaces `github.com/conforma/cli` with the spike branch
+from `github.com/dheerajodha/cli`. Remove that replacement once the CLI PR
+merges.
+
 ## Build and Run
 
 From the repository root:
@@ -38,8 +50,7 @@ The `Deploy GitHub Pages` workflow builds the WASM artifact, copies Go's
 
 ## Repository Layout
 
-- `pkg/playground/` contains the browser-safe playground evaluator package.
-- `cmd/wasm/` exposes the evaluator package to JavaScript when compiled to WASM.
+- `cmd/wasm/` exposes `github.com/conforma/cli/pkg/playground` to JavaScript when compiled to WASM.
 - `web/` contains the static playground UI and visual assets.
 - `fixtures/` contains example policies, data, and inputs for parity checks.
 
@@ -51,10 +62,10 @@ The `Deploy GitHub Pages` workflow builds the WASM artifact, copies Go's
 - Optional pasted JSON or YAML data available under `data`.
 - `deny`, `violation`, and `warn` rules in the module package.
 - OPA `# METADATA` comments for rule title and `custom.short_name`.
-- A Conforma-like JSON result with `success`, `violations`, `warnings`, and
-  parse/evaluation `errors`.
-- A small rule catalog plus `successCount` for the rules that were checked
-  without producing a violation or warning result.
+- A Conforma-like JSON result with `success`, `success-count`, `violations`,
+  `warnings`, `successes`, and parse/evaluation `errors`.
+- Rule metadata attached to each result, including code, title, description,
+  and solution when provided by `# METADATA`.
 
 ## Fixture
 
