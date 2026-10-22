@@ -30,19 +30,28 @@ import (
 )
 
 type Report struct {
-	Success    bool     `json:"success"`
-	Engine     string   `json:"engine"`
-	Package    string   `json:"package,omitempty"`
-	Modules    []string `json:"modules,omitempty"`
-	Violations []Result `json:"violations,omitempty"`
-	Warnings   []Result `json:"warnings,omitempty"`
-	Errors     []Error  `json:"errors,omitempty"`
+	Success      bool           `json:"success"`
+	SuccessCount int            `json:"successCount,omitempty"`
+	Engine       string         `json:"engine"`
+	Package      string         `json:"package,omitempty"`
+	Modules      []string       `json:"modules,omitempty"`
+	Rules        []RuleMetadata `json:"rules,omitempty"`
+	Violations   []Result       `json:"violations,omitempty"`
+	Warnings     []Result       `json:"warnings,omitempty"`
+	Errors       []Error        `json:"errors,omitempty"`
 }
 
 type Result struct {
 	Rule    string `json:"rule"`
 	Message string `json:"msg"`
 	Value   any    `json:"value,omitempty"`
+}
+
+type RuleMetadata struct {
+	Name  string `json:"name"`
+	Kind  string `json:"kind"`
+	Code  string `json:"code,omitempty"`
+	Title string `json:"title,omitempty"`
 }
 
 type Error struct {
@@ -54,6 +63,7 @@ type playgroundModule struct {
 	Filename string
 	Source   string
 	Package  string
+	AST      *ast.Module
 }
 
 func Evaluate(ctx context.Context, policyText string, inputText string) Report {
@@ -89,6 +99,13 @@ func EvaluateWithData(ctx context.Context, policyText string, inputText string, 
 		report.Modules = append(report.Modules, module.Filename)
 	}
 
+	rules, err := collectRuleMetadata(modules, pkg)
+	if err != nil {
+		report.Errors = append(report.Errors, Error{Stage: "metadata", Message: err.Error()})
+		return report
+	}
+	report.Rules = rules
+
 	for _, rule := range []string{"deny", "violation"} {
 		values, err := evalRule(ctx, modules, input, data, pkg, rule)
 		if err != nil {
@@ -106,6 +123,7 @@ func EvaluateWithData(ctx context.Context, policyText string, inputText string, 
 	}
 
 	report.Success = len(report.Errors) == 0 && len(report.Violations) == 0
+	report.SuccessCount = countSuccessfulRules(report.Rules, report.Violations, report.Warnings)
 	return report
 }
 
@@ -182,14 +200,103 @@ func parsePolicyModules(policyText string) ([]playgroundModule, error) {
 	}
 
 	for i := range modules {
-		module, err := ast.ParseModule(modules[i].Filename, modules[i].Source)
+		module, err := ast.ParseModuleWithOpts(modules[i].Filename, modules[i].Source, ast.ParserOptions{
+			ProcessAnnotation: true,
+		})
 		if err != nil {
 			return nil, err
 		}
 		modules[i].Package = strings.TrimPrefix(module.Package.Path.String(), "data.")
+		modules[i].AST = module
 	}
 
 	return modules, nil
+}
+
+func collectRuleMetadata(modules []playgroundModule, pkg string) ([]RuleMetadata, error) {
+	parsedModules := make([]*ast.Module, 0, len(modules))
+	for _, module := range modules {
+		parsedModules = append(parsedModules, module.AST)
+	}
+
+	annotations, errs := ast.BuildAnnotationSet(parsedModules)
+	if len(errs) > 0 {
+		return nil, errs
+	}
+
+	var rules []RuleMetadata
+	for _, module := range modules {
+		if module.Package != pkg {
+			continue
+		}
+		for _, rule := range module.AST.Rules {
+			name := rule.Head.Name.String()
+			kind, ok := resultKind(name)
+			if !ok {
+				continue
+			}
+
+			metadata := RuleMetadata{
+				Name: name,
+				Kind: kind,
+			}
+			applyRuleAnnotation(&metadata, pkg, annotations, rule)
+			rules = append(rules, metadata)
+		}
+	}
+	return rules, nil
+}
+
+func resultKind(rule string) (string, bool) {
+	switch {
+	case rule == "deny", rule == "violation", strings.HasPrefix(rule, "deny_"), strings.HasPrefix(rule, "violation_"):
+		return "violation", true
+	case rule == "warn", strings.HasPrefix(rule, "warn_"):
+		return "warning", true
+	default:
+		return "", false
+	}
+}
+
+func applyRuleAnnotation(metadata *RuleMetadata, pkg string, annotations *ast.AnnotationSet, rule *ast.Rule) {
+	if annotations == nil {
+		return
+	}
+
+	for _, ref := range annotations.Chain(rule) {
+		if ref.GetRule() == nil || ref.Annotations == nil {
+			continue
+		}
+
+		if metadata.Title == "" {
+			metadata.Title = ref.Annotations.Title
+		}
+		if metadata.Code == "" {
+			metadata.Code = ruleCode(pkg, ref.Annotations.Custom)
+		}
+		if metadata.Code != "" && metadata.Title != "" {
+			return
+		}
+	}
+}
+
+func ruleCode(pkg string, custom map[string]any) string {
+	shortName, ok := custom["short_name"].(string)
+	if !ok || shortName == "" {
+		return ""
+	}
+	if strings.Contains(shortName, ".") {
+		return shortName
+	}
+	return pkg + "." + shortName
+}
+
+func countSuccessfulRules(rules []RuleMetadata, violations []Result, warnings []Result) int {
+	count := len(rules) - len(violations) - len(warnings)
+	if count < 0 {
+		return 0
+	}
+	return count
 }
 
 func evalRule(ctx context.Context, modules []playgroundModule, input any, data map[string]any, pkg string, rule string) ([]any, error) {

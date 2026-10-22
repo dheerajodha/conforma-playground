@@ -50,8 +50,11 @@ The `Deploy GitHub Pages` workflow builds the WASM artifact, copies Go's
 - Pasted JSON or YAML input.
 - Optional pasted JSON or YAML data available under `data`.
 - `deny`, `violation`, and `warn` rules in the module package.
+- OPA `# METADATA` comments for rule title and `custom.short_name`.
 - A Conforma-like JSON result with `success`, `violations`, `warnings`, and
   parse/evaluation `errors`.
+- A small rule catalog plus `successCount` for the rules that were checked
+  without producing a violation or warning result.
 
 ## Fixture
 
@@ -59,7 +62,8 @@ The browser opens with the fixture from
 `fixtures/conforma-shaped/policy.rego`, `input-fail.yaml`, and `data.yaml`.
 That fixture is still intentionally small, but it exercises helper modules,
 separate rule data, and structured violation/warning objects with `code`, `msg`,
-and `metadata`.
+and `metadata`. It also includes OPA `# METADATA` comments so the playground can
+surface rule titles and short names in the output.
 
 See `PARITY.md` for the current parity notes and the recommended follow-up
 comparison with the real `ec validate input` path.

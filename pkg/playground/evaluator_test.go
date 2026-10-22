@@ -19,6 +19,7 @@ package playground
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -39,6 +40,7 @@ deny contains msg if {
 	require.Empty(t, report.Errors)
 	require.Len(t, report.Violations, 1)
 	require.Equal(t, "kind must be Deployment", report.Violations[0].Message)
+	require.Equal(t, 0, report.SuccessCount)
 }
 
 func TestEvaluatePlaygroundSuccess(t *testing.T) {
@@ -55,6 +57,7 @@ deny contains msg if {
 	require.True(t, report.Success)
 	require.Empty(t, report.Errors)
 	require.Empty(t, report.Violations)
+	require.Equal(t, 1, report.SuccessCount)
 }
 
 func TestEvaluatePlaygroundSyntaxError(t *testing.T) {
@@ -96,6 +99,7 @@ allowed_kind(kind) if {
 	require.Equal(t, []string{"main.rego", "lib/kinds.rego"}, report.Modules)
 	require.Len(t, report.Violations, 1)
 	require.Equal(t, "kind must be one of [\"Deployment\"]", report.Violations[0].Message)
+	require.Equal(t, 0, report.SuccessCount)
 }
 
 func TestEvaluatePlaygroundWithHelperModuleAndDataSuccess(t *testing.T) {
@@ -122,6 +126,7 @@ allowed_kind(kind) if {
 	require.True(t, report.Success)
 	require.Empty(t, report.Errors)
 	require.Empty(t, report.Violations)
+	require.Equal(t, 1, report.SuccessCount)
 }
 
 func TestEvaluatePlaygroundConformaShapedFixture(t *testing.T) {
@@ -134,8 +139,13 @@ func TestEvaluatePlaygroundConformaShapedFixture(t *testing.T) {
 	require.False(t, report.Success)
 	require.Empty(t, report.Errors)
 	require.Equal(t, []string{"main.rego", "lib/pipeline.rego", "lib/release.rego"}, report.Modules)
+	require.Len(t, report.Rules, 3)
+	require.Equal(t, 0, report.SuccessCount)
 	require.Len(t, report.Violations, 2)
 	require.Len(t, report.Warnings, 1)
+	requireRuleMetadata(t, report.Rules, "main.required_task_missing", "Required build task is present", "violation")
+	requireRuleMetadata(t, report.Rules, "main.signer_not_allowed", "Attestation signer is allowed", "violation")
+	requireRuleMetadata(t, report.Rules, "main.application_label_missing", "Application label is present", "warning")
 	requireResult(t, report.Violations, "main.required_task_missing", "required task build-container is missing")
 	requireResult(t, report.Violations, "main.signer_not_allowed", "attestation signer \"https://untrusted.example/signer\" is not allowed")
 	requireResult(t, report.Warnings, "main.application_label_missing", "application label is recommended")
@@ -152,14 +162,28 @@ func TestEvaluatePlaygroundConformaShapedFixturePasses(t *testing.T) {
 	require.Empty(t, report.Errors)
 	require.Empty(t, report.Violations)
 	require.Empty(t, report.Warnings)
+	require.Len(t, report.Rules, 3)
+	require.Equal(t, 3, report.SuccessCount)
 }
 
 func readFixture(t *testing.T, path string) string {
 	t.Helper()
-	path = "../../" + path
+	path = filepath.Join("..", "..", path)
 	content, err := os.ReadFile(path)
 	require.NoError(t, err)
 	return string(content)
+}
+
+func requireRuleMetadata(t *testing.T, rules []RuleMetadata, code string, title string, kind string) {
+	t.Helper()
+	for _, rule := range rules {
+		if rule.Code == code {
+			require.Equal(t, title, rule.Title)
+			require.Equal(t, kind, rule.Kind)
+			return
+		}
+	}
+	t.Fatalf("rule metadata with code %q not found in %#v", code, rules)
 }
 
 func requireResult(t *testing.T, results []Result, code string, msg string) {

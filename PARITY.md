@@ -14,6 +14,8 @@ inline Rego modules, inline JSON/YAML input, and inline JSON/YAML data.
 | Helper module imports | Works | `import data.lib.pipeline` and `import data.lib.release` |
 | Separate data document | Works | `data.yaml` loaded as OPA data |
 | Structured deny/warn results | Works | fixture returns Conforma-like `code`, `msg`, and `metadata` objects |
+| OPA rule metadata | Works | fixture `# METADATA` comments produce rule codes and titles in the browser report |
+| CLI-style success count | Works | passing fixture reports `successCount: 3` |
 | Same fixture through `ec validate input` | Works | local `policy.yaml` points at `cli-policy/` and `cli-data/` |
 
 ## CLI Comparison
@@ -62,7 +64,8 @@ Observed result:
 - `success-count: 3`
 
 This gives parity for the rule outcomes that users care about in this narrow
-fixture: pass/fail, violation count, warning count, rule code, and message.
+fixture: pass/fail, violation count, warning count, success count, rule code,
+rule title, and message.
 The browser output is still intentionally simpler than the CLI report envelope.
 
 ## Not Yet Full `ec validate input` Parity
@@ -73,7 +76,7 @@ The browser output is still intentionally simpler than the CLI report envelope.
 | Source resolution and downloading | Missing | No git, OCI, or remote bundle fetching in the browser path. |
 | Include/exclude rule filtering | Missing | The playground queries package rules directly. |
 | Conforma report shaping | Partial | Output is Conforma-like JSON, not the real CLI report type. |
-| Policy metadata and docs links | Missing | OPA metadata comments are not inspected yet. |
+| Full Conforma metadata and docs links | Partial | OPA metadata title and `custom.short_name` are inspected, but the browser does not yet mirror all CLI metadata shaping. |
 | CLI custom built-ins | Unknown | Needs an inventory of Conforma-specific OPA built-ins used by real policies. |
 | Sigstore/Rekor/OCI validation | Out of scope | Browser CORS and CLI dependency graph make this a backend or hybrid concern. |
 
